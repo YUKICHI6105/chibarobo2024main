@@ -9,48 +9,49 @@
 
 void shooter::pose2d_callback(const geometry_msgs::msg::Pose2D::SharedPtr msg)
 {
-  (void) msg;
+  (void)msg;
   RCLCPP_INFO(this->get_logger(), "I heard:");
   pose2d = *msg;
 }
 
 void shooter::timer_callback()
 {
-  (void) pose2d;
+  (void)pose2d;
   RCLCPP_INFO(this->get_logger(), "I heard:");
-  switch(robotstate){
-  case RobotState::STOPstartpose :
+  switch (robotstate)
+  {
+  case RobotState::STOPstartpose:
   {
     robot_target_vel.set__x(0.0f).set__y(0.0f).set__theta(0.0f);
     robot_vel_publisher_->publish(robot_target_vel);
     break;
   }
-  case RobotState::RUNtoSHOOTpose :
+  case RobotState::RUNtoSHOOTpose:
   {
-    if(std::abs(shoot_pose2d.x - pose2d.x) < 0.1f && std::abs(shoot_pose2d.y - pose2d.y) < 0.1f && std::abs(shoot_pose2d.theta - pose2d.theta) < 0.1f)
+    if (std::abs(shoot_pose2d.x - pose2d.x) < 0.1f && std::abs(shoot_pose2d.y - pose2d.y) < 0.1f && std::abs(shoot_pose2d.theta - pose2d.theta) < 0.1f)
     {
       robotstate = RobotState::SHOOTING;
       break;
     }
     kp_ = 1.0f;
-    robot_target_vel.set__x(kp_*(shoot_pose2d.x - pose2d.x)).set__y(kp_*(shoot_pose2d.y - pose2d.y)).set__theta(kp_*(shoot_pose2d.theta - pose2d.theta));
+    robot_target_vel.set__x(kp_ * (shoot_pose2d.x - pose2d.x)).set__y(kp_ * (shoot_pose2d.y - pose2d.y)).set__theta(kp_ * (shoot_pose2d.theta - pose2d.theta));
     robot_vel_publisher_->publish(robot_target_vel);
     break;
   }
-  case RobotState::SHOOTING :
+  case RobotState::SHOOTING:
   {
-    
+
     break;
   }
-  case RobotState::RUNtoSTARTpose :
+  case RobotState::RUNtoSTARTpose:
   {
-    if(std::abs(start_pose2d.x - pose2d.x) < 0.1f && std::abs(start_pose2d.y - pose2d.y) < 0.1f && std::abs(start_pose2d.theta - pose2d.theta) < 0.1f)
+    if (std::abs(start_pose2d.x - pose2d.x) < 0.1f && std::abs(start_pose2d.y - pose2d.y) < 0.1f && std::abs(start_pose2d.theta - pose2d.theta) < 0.1f)
     {
       robotstate = RobotState::STOPstartpose;
       break;
     }
     kp_ = 1.0f;
-    robot_target_vel.set__x(kp_*(start_pose2d.x - pose2d.x)).set__y(kp_*(start_pose2d.y - pose2d.y)).set__theta(kp_*(start_pose2d.theta - pose2d.theta));
+    robot_target_vel.set__x(kp_ * (start_pose2d.x - pose2d.x)).set__y(kp_ * (start_pose2d.y - pose2d.y)).set__theta(kp_ * (start_pose2d.theta - pose2d.theta));
     robot_vel_publisher_->publish(robot_target_vel);
     break;
   }
@@ -59,57 +60,71 @@ void shooter::timer_callback()
 
 void shooter::joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg)
 {
-  (void) msg;
+  (void)msg;
   RCLCPP_INFO(this->get_logger(), "I heard:");
-  if(msg->buttons[6] == 1)
+  if (msg->buttons[6] == 1)
   {
     robotstate = RobotState::RUNtoSHOOTpose;
   }
-  if(msg->buttons[7] == 1)
+  if (msg->buttons[7] == 1)
   {
     robomas_frame_publisher_->publish(robomas::get_vel_frame(4, true));
-    robomas_frame_publisher_->publish(robomas::get_stablepos_frame(5, true, 1.0f));
+    robomas_frame_publisher_->publish(robomas::get_stablepos_frame(5, true, M_PI));
     roler_state = false;
-  }else if(msg->buttons[0] == 1)
+  }
+  else if (msg->buttons[0] == 1)
   {
-    robomas_frame_publisher_->publish(robomas::get_dis_frame(4, false));
-    robomas_frame_publisher_->publish(robomas::get_dis_frame(5, false));
+    robomas_frame_publisher_->publish(robomas::get_dis_frame(4, true));
+    robomas_frame_publisher_->publish(robomas::get_dis_frame(5, true));
   };
-  if(msg->buttons[2] == 1)
+  if (msg->buttons[2] == 1)
   {
-    if(pushed == false)
+    if (pushed == false)
     {
-      if(roler_state)
+      if (roler_state)
       {
         robomas_target4_publisher_->publish(robomas::get_target(0.0f));
         roler_state = false;
-      }else{
+      }
+      else
+      {
         robomas_target4_publisher_->publish(robomas::get_target(300.0f));
         roler_state = true;
       }
       pushed = true;
     }
   }
-  if(msg->buttons[1] == 1)
+  else if (msg->buttons[2] == 0)
   {
-    if(count==0){
-      robomas_target5_publisher_->publish(robomas::get_target(M_PI/6));
-      timestamp = msg->header.stamp;
-      timestamp.sec += 1;
-      count++;
-    }else{
-      if(msg->header.stamp > timestamp){
-        robomas_frame_publisher_->publish(robomas::get_stablepos_frame(5, true, 1.0f));
+    pushed = false;
+  }
+  if (msg->buttons[1] == 1)
+  {
+    if (pushed2 == false)
+    {
+      if (count == 0)
+      {
+        robomas_target5_publisher_->publish(robomas::get_target(20*M_PI));
+        count++;
+      }
+      else
+      {
+        robomas_frame_publisher_->publish(robomas::get_stablepos_frame(5, true, M_PI));
         count = 0;
       }
+      pushed2 = true;
     }
+  }
+  else if (msg->buttons[1] == 0)
+  {
+    pushed2 = false;
   }
 }
 
-int main(int argc, char ** argv)
+int main(int argc, char **argv)
 {
-  (void) argc;
-  (void) argv;
+  (void)argc;
+  (void)argv;
 
   printf("hello world chibarobo2024main package\n");
   rclcpp::init(argc, argv);

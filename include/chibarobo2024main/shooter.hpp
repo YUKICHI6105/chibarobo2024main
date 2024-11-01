@@ -10,7 +10,6 @@ using namespace std::chrono_literals;
 enum class RobotState{
     STOPstartpose,
     RUNtoSHOOTpose,
-    STOPshootpose,
     SHOOTING,
     RUNtoSTARTpose,
 };
@@ -33,6 +32,7 @@ class shooter : public rclcpp::Node
         builtin_interfaces::msg::Time timestamp;
         bool roler_state = false;
         bool pushed = false;
+        bool pushed2 = false;
         geometry_msgs::msg::Pose2D pose2d;
         geometry_msgs::msg::Pose2D robot_target_vel;
         geometry_msgs::msg::Pose2D start_pose2d;

@@ -1,0 +1,13 @@
+<launch>
+    <node pkg="joy" exec="joy_node" name="joy_node">
+    </node>
+
+    <node pkg="robomas_omuni" exec="robomas_omuni3_node" name="robomas_omuni3_node">
+    </node>
+
+    <node pkg="chibarobo2024main" exec="shooter" name="shooter">
+    </node>
+
+    <include file="$(find-pkg-share robomas_plugins)/launch/robomas_bridge_launch.xml"/>
+
+</launch>
